@@ -13,6 +13,9 @@ However this will frequently be too low-level for most developers. The `Bot` cla
         context['hooray'] = () => context.reply("Hooray!");
     }})
 ```
+>JF: If this code is correct then I'm missing something. You put a method definition (`createContext()`) inside curly braces? Enlighten me.
+
+>JF: Aha. You did it later too (simple.ts:17) and after some digging realized that I didn't know you could use a named function in an anonymous object without an explicit property name. I thought to do `{foo(){}}` you had to do `{foo:()=>{}}`. TIL.
 
 This approach is undoubtedly convenient and efficient. However it comes with a number of issues which have become more clear over time:
 
@@ -30,13 +33,20 @@ In JavaScript, this sort of thing is quite normal, but in languages with more re
 
 The larger problem is that this approach encourages hardcoded dependencies within middleware. What middleware Y really wants is a `foo()` function. But instead of passing that function directly to Y on creation, or Y requesting it from a Dependency Injection framework, Y is forced to look for it in `context`, hoping that middleware X put it there.
 
+>JF: Strongly agree. Y doesn't need to know the full type of context at any given point in its unfortunate evolution. It only needs the foo() function... an argument for keeping them separate.
+
 These hardcoded dependencies, only enforced at runtime, means that developers will have to rely on documentation and trial and error.
 
 Ultimately the result of all this will be a fragile web of dependencies, which will not make for a happy ecosystem.
 
+>JF: As Steve pointed out, it may be less common for 3rd party developers to use this pattern (as is apparently the case in the Express ecosystem), so it may not ultimately lead to an unhappy ecosystem, but it seems to me to drag it that way at least.
+
+>JF: Might I suggest you add a section on debugging - the difficulty of which would grow as the codebase does.
 ### Testing
 
 Hardcoded dependencies mean that testing is that much harder. To test Y means constructing a mocked context containing every dependency of Y.
+
+>JF: I'm impressed with the case you made in the preceding.
 
 ## My Proposal
 
@@ -55,6 +65,8 @@ As mentioned above, an adapter provides all that is necessary for communicting w
 ### Turn
 
 This implementation focuses on the concept of a "turn", which is defined as the lifecycle of a request (incoming activity or "proactice" session).
+
+>JF: I think you mean "proactive"
 
 A turn is served by a class called `Turn` which is essentially a base context (I'm saving the word "context" for later):
 
@@ -81,9 +93,15 @@ This is still very low level. For instance, there is no `reply()` function. That
 
 This illustrates the philosophy of a Turn, which is to provide the minimal foundation necessary to build even higher-level abstractions.
 
+>JF: Hmm. I see what you're doing here putting a Turn at the bottom of the stack, and this may just be a matter of nomenclature. Although I like the name, and I like that it distinguishes a bot from say a web framework, I also sort of like using the `context` name at this low level because it's very familiar. I suppose we have at this level aready used the term `Activity` and we may as well start using specific nomenclature. Just thinking out loud.
+
+>JF: FWIW, I came back to this after spending some time in your code and I'm liking the name `turn` at this level now.
+
 ### TurnAdapter
 
 This is my version of `Bot`. (I'm not attached to the name.)
+
+>JF: good because I very much dislike the name TurnAdapter :)
 
 This provides:
 
@@ -105,6 +123,8 @@ To see Turn and TurnAdapter in action, look at [Sample 1: Basic](src/samples/bas
 TurnAdapter allows you to specify middleware in its constructor and/or by calling `.use()`.
 
 This sample shows that you can work with a plain Turn but it's kind of a pain. Very quickly you see the need for higher-level abstractions to make your life easier.
+
+>JF: I am a fan of what you're doing in `basic.ts`. It's low level, but it's all still sensible and simple. It seems like an excellent base to build on. I'm certainly a fan of being able to go to this level when the task demands it.
 
 ### adding abstractions
 
